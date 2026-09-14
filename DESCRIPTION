@@ -1,0 +1,52 @@
+Package: SICoxCURE
+Type: Package
+Title: Single-Index/Cox Mixture Cure Model
+Version: 0.1.1
+Authors@R: c(
+    person("Mohamed Yassir", "Errahmani",
+           role = c("aut", "cre"),
+           email = "mohamed-yassir.errahmani@umontpellier.fr",
+           comment = c(ORCID = "")),
+    person("Mailis", "Amico",
+           role = "aut",
+           comment = c(ORCID = "0000-0003-2630-8938")),
+    person("Ingrid", "Van Keilegom",
+           role = "aut",
+           comment = c(ORCID = "0000-0001-8827-7642")),
+    person("Catherine", "Legrand",
+           role = "aut",
+           comment = c(ORCID = "0000-0002-0461-5091")))
+Description: Implements the Single-Index/Cox (SIC) mixture cure model
+    proposed by Amico, Van Keilegom and Legrand (2019)
+    <doi:10.1111/biom.12999>. The population survival function is
+    written as S(t|x,z) = 1 - p(x) + p(x) * Su(t|z), where p(x) =
+    g(gamma'x) is the incidence (probability of being uncured) modeled
+    via a single-index structure with unknown link function g estimated
+    nonparametrically using kernel smoothing (Nadaraya-Watson
+    leave-one-out estimator), and Su(t|z) is the latency (conditional
+    survival of the uncured subjects) modeled via a Cox proportional
+    hazards model. Estimation is performed by maximum likelihood using
+    an Expectation-Maximization (EM) algorithm. The bandwidth for the
+    kernel estimator is selected at each EM iteration by likelihood
+    cross-validation. The package includes functions for fitting the
+    model, predicting incidence and survival for new observations,
+    and computing prediction error.
+License: GPL (>= 3)
+Encoding: UTF-8
+LazyData: false
+Depends:
+    R (>= 3.5.0)
+Imports:
+    stats,
+    utils,
+    parallel
+Suggests:
+    testthat (>= 3.0.0),
+    knitr,
+    rmarkdown,
+    survival
+Config/testthat/edition: 3
+VignetteBuilder: knitr
+URL: https://github.com/MohamedYassirErrahmani/SICoxCURE
+BugReports: https://github.com/MohamedYassirErrahmani/SICoxCURE/issues
+Config/roxygen2/version: 8.1.0

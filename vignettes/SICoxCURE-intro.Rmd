@@ -1,0 +1,112 @@
+---
+title: "Introduction to the SICoxCURE package"
+author: "Mohamed Yassir Errahmani, Mailis Amico, Ingrid Van Keilegom, Catherine Legrand"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Introduction to the SICoxCURE package}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment  = "#>",
+  eval     = FALSE
+)
+```
+
+## Overview
+
+The `SICoxCURE` package implements the **Single-Index/Cox (SIC) mixture
+cure model** proposed by Amico, Van Keilegom and Legrand (2019).
+The model writes the population survival function as:
+
+$$S(t \mid \mathbf{x}, \mathbf{z}) =
+  1 - p(\mathbf{x}) + p(\mathbf{x}) \, S_u(t \mid \mathbf{z})$$
+
+where:
+
+- $p(\mathbf{x}) = g(\boldsymbol{\gamma}^\top \mathbf{x})$ is the
+  **incidence** (probability of being non-cured), estimated
+  nonparametrically via Nadaraya-Watson kernel smoothing
+- $S_u(t \mid \mathbf{z})$ is the **latency** (survival of non-cured
+  subjects), modeled via a Cox proportional hazards model
+
+## Installation
+
+```{r install}
+install.packages("SICoxCURE")
+```
+
+## Quick start
+
+```{r simulate}
+library(SICoxCURE)
+
+# Simulate data from scenario 1 (logistic link)
+set.seed(42)
+n     <- 200
+X     <- matrix(rnorm(n * 4), n, 4)
+Z     <- matrix(rbinom(n, 1L, 0.6), n, 1)
+p     <- 1 / (1 + exp(-X %*% c(1, -0.5, 0.3, -0.2)))
+B     <- rbinom(n, 1L, p)
+T0    <- ifelse(B == 1, rexp(n, 0.5), Inf)
+C     <- rexp(n, 0.3)
+Y     <- pmin(T0, C)
+delta <- as.integer(T0 <= C & T0 < Inf)
+dat   <- data.frame(Y=Y, delta=delta)
+head(dat[, c("Y", "delta", "X1", "X2", "Z", "B", "p_true")])
+```
+
+## Fitting the SIC model
+
+```{r fit}
+X <- as.matrix(dat[, c("X1", "X2", "X3", "X4")])
+Z <- as.matrix(dat[, "Z", drop = FALSE])
+
+fit <- sic_fit(dat$Y, dat$delta, X, Z,
+               h_step  = 0.05,
+               verbose = 1)
+summary(fit)
+```
+
+## Predictions
+
+```{r predict}
+# Predictions on training data
+p_hat <- predict(fit, type = "incidence")
+
+# Predictions on new data
+pred <- predict(fit,
+                newX   = X[1:10, ],
+                newZ   = Z[1:10, ],
+                type   = "all")
+```
+
+## Prediction error (train/test split)
+
+```{r pred-error}
+set.seed(1)
+idx  <- sample(nrow(dat), 160)
+
+fit2 <- sic_fit(dat$Y[idx], dat$delta[idx],
+                X[idx, ], Z[idx, , drop = FALSE],
+                h_step = 0.05, verbose = 0)
+
+pe <- prediction_error(fit2,
+                       Y_test     = dat$Y[-idx],
+                       delta_test = dat$delta[-idx],
+                       X_test     = X[-idx, ],
+                       Z_test     = Z[-idx, , drop = FALSE])
+cat("Prediction error:", round(pe, 3), "\n")
+```
+
+## Accuracy on simulated data
+
+```{r ase}
+ase <- compute_ase(fit$p_hat, dat$p_true)
+cat("ASE:", round(ase, 5), "\n")
+```
+

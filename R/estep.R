@@ -1,0 +1,82 @@
+# =============================================================
+# E-step of the EM algorithm : compute posterior weights W_i
+# =============================================================
+
+#' E-step of the EM Algorithm
+#'
+#' @description
+#' Computes the posterior weights \eqn{W_i = P(B_i = 1 \mid
+#' \text{data}, \hat{\theta}^{(m-1)})}, i.e., the conditional
+#' probability that subject \eqn{i} is uncured given the
+#' observed data and the current parameter estimates.
+#'
+#' Three cases are handled:
+#' \describe{
+#'   \item{Event (\eqn{\Delta_i = 1})}{Subject \eqn{i} has
+#'     experienced the event, so \eqn{W_i = 1} (certainly
+#'     uncured).}
+#'   \item{Censored beyond \eqn{\tau}}{Subject \eqn{i} is
+#'     censored after the last observed event time \eqn{\tau},
+#'     so \eqn{W_i = 0} (considered cured, Taylor 1995).}
+#'   \item{Censored before \eqn{\tau}}{Bayes formula:
+#'     \deqn{W_i = \frac{p_i \, S_u(Y_i \mid Z_i)}
+#'     {(1 - p_i) + p_i \, S_u(Y_i \mid Z_i)}}}
+#' }
+#'
+#' @param p_cur Numeric vector of length \eqn{n}. Current
+#'   estimates of the uncure probability \eqn{p_i = p(X_i)}.
+#'
+#' @param Su_cur Numeric vector of length \eqn{n}. Current
+#'   estimates of the latency survival
+#'   \eqn{\hat{S}_u(Y_i \mid Z_i)}.
+#'
+#' @param delta Integer vector of length \eqn{n}. Event
+#'   indicators (\code{1} = event, \code{0} = censored).
+#'
+#' @param beyond_tau Logical vector of length \eqn{n}.
+#'   \code{TRUE} if subject \eqn{i} is censored and
+#'   \eqn{Y_i > \tau} (cure threshold). Computed by
+#'   \code{is_beyond_threshold}.
+#'
+#' @return Numeric vector of length \eqn{n} with values in
+#'   \eqn{[0, 1]}. Entry \eqn{W_i} is:
+#'   \itemize{
+#'     \item \code{1.0} if \code{delta[i] == 1}
+#'     \item \code{0.0} if \code{beyond_tau[i] == TRUE}
+#'     \item \eqn{p_i S_u(Y_i) / ((1-p_i) + p_i S_u(Y_i))}
+#'           otherwise
+#'   }
+#'
+#' @references
+#' Amico M, Van Keilegom I, Legrand C (2019). The
+#' single-index/Cox mixture cure model.
+#' \emph{Biometrics}, \strong{75}(2), 452--462.
+#' \doi{10.1111/biom.12999}
+#'
+#' Taylor JMG (1995). Semi-parametric estimation in failure
+#' time mixture models. \emph{Biometrics}, \strong{51},
+#' 899--907.
+estep <- function(p_cur, Su_cur, delta, beyond_tau) {
+
+  n <- length(delta)
+  W <- numeric(n)
+
+  # Case 1 : event (delta = 1) -> W = 1 (certainly uncured)
+  W[delta == 1L] <- 1.0
+
+  # Case 2 : censored beyond tau -> W = 0 (considered cured)
+  W[beyond_tau] <- 0.0
+
+  # Case 3 : censored before tau -> Bayes formula
+  # W_i = p_i * Su_i / [(1-p_i) + p_i * Su_i]
+  uncertain <- (delta == 0L) & !beyond_tau
+  if (any(uncertain)) {
+    p_i  <- p_cur[uncertain]
+    Su_i <- Su_cur[uncertain]
+    denom <- (1.0 - p_i) + p_i * Su_i
+    denom <- pmax(denom, 1e-15)
+    W[uncertain] <- p_i * Su_i / denom
+  }
+
+  W
+}
