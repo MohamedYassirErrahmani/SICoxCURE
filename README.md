@@ -1,8 +1,7 @@
 # SICoxCURE: Single-Index/Cox Mixture Cure Model
 
 <!-- badges: start -->
-[![R-CMD-check](https://github.com/MohamedYassirErrahmani/SICoxCURE/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/MohamedYassirErrahmani/SICoxCURE/actions/workflows/R-CMD-check.yaml)
-[![CRAN status](https://www.r-pkg.org/badges/version/SICoxCURE)](https://CRAN.R-project.org/package=SICoxCURE)
+[![R-CMD-check](https://github.com/MohamedYassirErrahmani/SICoxCURE/actions/workflows/r.yml/badge.svg)](https://github.com/MohamedYassirErrahmani/SICoxCURE/actions/workflows/r.yml)
 <!-- badges: end -->
 
 ## Overview
