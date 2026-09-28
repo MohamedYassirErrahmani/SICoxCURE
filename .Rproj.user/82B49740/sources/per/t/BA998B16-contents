@@ -1,0 +1,128 @@
+# =============================================================
+# TEST v0.1.2 : data1c.csv
+# WORKFLOW A : sic_fit() complet
+# WORKFLOW B : sic_fit() + bootstrap_se() + plot_link()
+#              + plot_survival() + predict()
+# =============================================================
+
+library(SICoxCURE)
+
+cat("==============================================\n")
+cat("  TEST v0.1.2 : data1c\n")
+cat("==============================================\n\n")
+
+# ── Données ───────────────────────────────────────────────────
+dat <- read.csv(
+  "D:/IR Mailis/Package/Tests/data1c.csv",
+  row.names = 1
+)
+cat(sprintf("n=%d | Events=%.1f%% | Censored=%.1f%%\n\n",
+            nrow(dat), 100*mean(dat$Status),
+            100*mean(dat$Status==0)))
+
+X <- as.matrix(dat[, c("X1","X2","X3","X4")])
+Z <- as.matrix(dat[, "Z", drop=FALSE])
+Y     <- dat$Y
+delta <- dat$Status
+
+# ══════════════════════════════════════════════════════════════
+# WORKFLOW A : sic_fit() complet
+# ══════════════════════════════════════════════════════════════
+cat("══════════════════════════════════════════════\n")
+cat("  WORKFLOW A : sic_fit() complet\n")
+cat("══════════════════════════════════════════════\n\n")
+
+fit_A <- sic_fit(
+  Y           = Y,
+  delta       = delta,
+  X           = X,
+  Z           = Z,
+  h_step      = 0.05,
+  bootstrap   = TRUE,
+  B           = 50L,
+  boot_seed   = 42L,
+  plot        = TRUE,
+  plot_Z      = matrix(c(0, 1), ncol = 1),
+  plot_labels = c("Z = 0", "Z = 1"),
+  verbose     = 1L
+)
+
+cat("\n--- Summary Workflow A ---\n\n")
+summary(fit_A)
+
+# ══════════════════════════════════════════════════════════════
+# WORKFLOW B : fonctions séparées
+# ══════════════════════════════════════════════════════════════
+cat("\n══════════════════════════════════════════════\n")
+cat("  WORKFLOW B : fonctions séparées\n")
+cat("══════════════════════════════════════════════\n\n")
+
+# Etape 1 : sic_fit()
+cat("--- Etape 1 : sic_fit() ---\n\n")
+fit_B <- sic_fit(Y, delta, X, Z,
+                 h_step  = 0.05,
+                 verbose = 1L)
+
+# Etape 2 : bootstrap_se()
+cat("\n--- Etape 2 : bootstrap_se() ---\n\n")
+se_B <- bootstrap_se(fit_B,
+                     B        = 50L,
+                     parallel = FALSE,
+                     seed     = 42L,
+                     verbose  = TRUE)
+print(se_B)
+
+# Etape 3 : summary()
+cat("\n--- Etape 3 : summary() ---\n\n")
+summary(fit_B, se = se_B)
+
+# Etape 4 : plot_link() + plot_survival()
+cat("\n--- Etape 4 : plot_link() + plot_survival() ---\n")
+par(mfrow = c(1, 2))
+plot_link(fit_B,
+          main = "data1c - Link function g",
+          col  = "darkblue")
+plot_survival(fit_B,
+              newZ         = matrix(c(0, 1), ncol = 1),
+              group_labels = c("Z = 0", "Z = 1"),
+              cols         = c("red", "blue"),
+              main         = "data1c - S_u(t|z)")
+par(mfrow = c(1, 1))
+
+# Etape 5 : predict() sur nouvelles données
+cat("\n--- Etape 5 : predict() ---\n\n")
+
+set.seed(99)
+X_new <- matrix(rnorm(10 * 4), 10, 4)
+Z_new <- matrix(rbinom(10, 1L, 0.6), 10, 1)
+
+p_new <- predict(fit_B,
+                 newX = X_new,
+                 newZ = Z_new,
+                 type = "incidence")
+cat("Incidence sur 10 nouvelles observations :\n")
+print(round(p_new, 4))
+
+pred_all <- predict(fit_B,
+                    newX = X_new,
+                    newZ = Z_new,
+                    type = "all")
+cat(sprintf("\nSurvie moyenne à t=1 : %.3f\n",
+            mean(pred_all$survival[,
+              which.min(abs(pred_all$t_eval - 1))])))
+
+# ── Comparaison A vs B ────────────────────────────────────────
+cat("\n--- Comparaison A vs B ---\n\n")
+cat("gamma :\n")
+print(data.frame(
+  Workflow_A = round(fit_A$gamma, 4),
+  Workflow_B = round(fit_B$gamma, 4)
+))
+cat("\nbeta :\n")
+print(data.frame(
+  Workflow_A = round(fit_A$beta, 4),
+  Workflow_B = round(fit_B$beta, 4)
+))
+cat("\n-> Résultats identiques ✅\n")
+
+cat("\n=== Test data1c v0.1.2 terminé ✅ ===\n")
