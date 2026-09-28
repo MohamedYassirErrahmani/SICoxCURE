@@ -5,6 +5,15 @@
 [![CRAN status](https://www.r-pkg.org/badges/version/SICoxCURE)](https://CRAN.R-project.org/package=SICoxCURE)
 <!-- badges: end -->
 
+
+## Documentation
+
+A complete tutorial is available online:
+
+[![Tutorial](https://img.shields.io/badge/Tutorial-Online-2E86C1?style=for-the-badge&logo=github)](https://mohamedyassirerrahmani.github.io/SICoxCURE-tutorial/)
+
+> **Developer:** Mohamed Yassir Errahmani (University of Montpellier)
+
 ## Overview
 
 `SICoxCURE` implements the **Single-Index/Cox (SIC) mixture cure model**
