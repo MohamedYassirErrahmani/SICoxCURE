@@ -55,6 +55,8 @@ Ignored if \code{data} is provided.}
 subjects. Can overlap with \code{X}. If \code{NULL},
 \code{X} is used. Ignored if \code{data} is provided.}
 
+\item{formula}{Not used. Reserved for a future formula interface.}
+
 \item{data}{Optional \code{data.frame} containing all
 variables. If provided, \code{col_Y}, \code{col_delta},
 \code{cols_X} must be specified.}

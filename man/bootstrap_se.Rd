@@ -34,6 +34,10 @@ uses all available cores minus one
 \item{seed}{Integer or \code{NULL}. Random seed for
 reproducibility. Default: \code{NULL}.}
 
+\item{max_iter_boot}{Integer or \code{NULL}. Maximum number of EM
+iterations for each bootstrap fit. If \code{NULL} (default), uses
+the same \code{max_iter} as the main fit.}
+
 \item{verbose}{Logical. Should a progress message be
 printed? Default: \code{TRUE}.}
 }
