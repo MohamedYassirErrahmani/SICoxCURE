@@ -16,9 +16,12 @@ sic_fit(
   cols_X = NULL,
   cols_Z = NULL,
   kernel = "epanechnikov",
-  h_range = c(0.4, 1),
+  h_range = c(0.05, 5),
   h_step = 0.001,
-  constraint = "gamma1",
+  constraint = "norm1",
+  gamma_init = NULL,
+  beta_init = NULL,
+  h_init = NULL,
   tol = 1e-05,
   max_iter = 500L,
   conv_method = c("both", "max", "sum"),
@@ -91,10 +94,43 @@ faster computation at some loss of precision.}
 
 \item{constraint}{Character string specifying the
 identifiability constraint on \eqn{\boldsymbol{\gamma}}.
-\code{"gamma1"} (default): \eqn{\gamma_1 = 1}.
+\code{"norm1"} (default): \eqn{\|\\boldsymbol{\\gamma}\\| = 1} and
 \code{"norm1"}: \eqn{\|\boldsymbol{\gamma}\| = 1} and
 \eqn{\gamma_1 > 0}. See Assumption A1-(v) in Amico et
 al. (2019).}
+
+\item{gamma_init}{Numeric vector of length \eqn{d} or
+\code{NULL} (default). Optional initial value for the
+incidence coefficient vector \eqn{\boldsymbol{\gamma}}.
+When supplied, the EM algorithm is warm-started from
+this value (normalized to satisfy \code{constraint})
+instead of the default logistic-regression
+initialization. This is particularly useful when
+\code{constraint = "norm1"}: initializing from the
+converged \code{constraint = "gamma1"} solution
+(normalized to unit norm) can substantially improve
+convergence and avoid local optima of the SLSQP
+optimizer. Example:
+\preformatted{
+fit_g1   <- sic_fit(..., constraint = "gamma1")
+fit_norm1 <- sic_fit(..., constraint = "norm1",
+                     gamma_init = fit_g1$gamma)
+}}
+
+\item{beta_init}{Numeric vector of length \eqn{q} or
+\code{NULL} (default). Optional initial value for the
+latency coefficient vector \eqn{\boldsymbol{\beta}}.
+When supplied together with \code{gamma_init}, provides
+a full warm-start of the EM algorithm from a previously
+converged solution, which is the most effective way to
+transfer the \code{gamma1} solution to \code{norm1}.
+Example:
+\preformatted{
+fit_g1   <- sic_fit(..., constraint = "gamma1")
+fit_norm1 <- sic_fit(..., constraint = "norm1",
+                     gamma_init = fit_g1$gamma,
+                     beta_init  = fit_g1$beta)
+}}
 
 \item{tol}{Numeric. Convergence tolerance for the EM
 algorithm. The algorithm stops when the maximum absolute
@@ -291,7 +327,9 @@ estimator with bandwidth \eqn{h}.
 Initial values are obtained from a logistic regression of
 \code{delta} on \code{X} (for \eqn{\boldsymbol{\gamma}^{(0)}})
 and a Cox model fitted on uncensored observations only
-(for \eqn{\boldsymbol{\beta}^{(0)}}).
+(for \eqn{\boldsymbol{\beta}^{(0)}}). When \code{gamma_init}
+is provided, it replaces the logistic initialization for
+\eqn{\boldsymbol{\gamma}^{(0)}}.
 }
 \examples{
 \dontrun{
