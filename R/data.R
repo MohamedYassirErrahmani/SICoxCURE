@@ -23,6 +23,7 @@
 #'   \item Event rate: 23.3\%; plateau: 18.7\%; seed: 2019.
 #' }
 #' @examples
+#' \donttest{
 #' data(sicure_data)
 #' fit <- sic_fit(
 #'   Y             = sicure_data$FAILTIME,

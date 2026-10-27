@@ -33,16 +33,4 @@ Simulated from a SIC mixture cure model with:
   \item Event rate: 23.3\%; plateau: 18.7\%; seed: 2019.
 }
 }
-\examples{
-data(sicure_data)
-fit <- sic_fit(
-  Y             = sicure_data$FAILTIME,
-  delta         = sicure_data$FAILCENS,
-  X             = as.matrix(sicure_data[, c("TRT","SEX","AGE")]),
-  Z             = matrix(sicure_data$TRT, ncol = 1),
-  standardize_X = TRUE,
-  verbose       = 1L
-)
-print(fit)
-}
 \keyword{datasets}
