@@ -33,7 +33,7 @@ Simulated from a SIC mixture cure model with:
 }
 }
 \examples{
-\donttest{
+\dontrun{
 data(sicure_data)
 fit <- sic_fit(
   Y             = sicure_data$FAILTIME,
