@@ -117,7 +117,9 @@ fit_norm1 <- sic_fit(..., constraint = "norm1",
                      gamma_init = fit_g1$gamma)
 }}
 
-\item{beta_init}{Numeric vector of length \eqn{q} or
+\item{beta_init}{Numeric vector of length \eqn{q} or}
+
+\item{h_init}{Numeric or \code{NULL}. Initial bandwidth value. If \code{NULL} (default), the bandwidth is selected by cross-validation over \code{h_range}.
 \code{NULL} (default). Optional initial value for the
 latency coefficient vector \eqn{\boldsymbol{\beta}}.
 When supplied together with \code{gamma_init}, provides
