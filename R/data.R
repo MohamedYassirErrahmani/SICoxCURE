@@ -16,11 +16,10 @@
 #' @details
 #' Simulated from a SIC mixture cure model with:
 #' \itemize{
-#'   \item Incidence: \eqn{p(\mathbf{x}) = \text{logit}^{-1}(\boldsymbol{\gamma}^\top \mathbf{x} - 0.5)}
-#'     with \eqn{\boldsymbol{\gamma} = (0.8, -0.3, 0.015)}.
-#'   \item Latency: exponential with rate \eqn{0.25 \times \exp(-0.6 \times \text{TRT})}.
+#'   \item Incidence: logit-1(gamma'x - 0.5) with gamma = (0.8, -0.3, 0.015).
+#'   \item Latency: exponential with rate 0.25 * exp(-0.6 * TRT).
 #'   \item Censoring: exponential with rate 0.12.
-#'   \item Event rate: 23.3\%; plateau: 18.7\%; seed: 2019.
+#'   \item Event rate: 23.3%; plateau: 18.7%; seed: 2019.
 #' }
 #' @examples
 #' \donttest{
@@ -28,10 +27,11 @@
 #' fit <- sic_fit(
 #'   Y             = sicure_data$FAILTIME,
 #'   delta         = sicure_data$FAILCENS,
-#'   X             = as.matrix(sicure_data[, c("TRT","SEX","AGE")]),
+#'   X             = as.matrix(sicure_data[, c('TRT','SEX','AGE')]),
 #'   Z             = matrix(sicure_data$TRT, ncol = 1),
 #'   standardize_X = TRUE,
 #'   verbose       = 1L
 #' )
 #' print(fit)
+#' }
 "sicure_data"
