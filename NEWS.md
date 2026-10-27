@@ -7,7 +7,7 @@
   applied at every EM iteration). Fallback to BFGS with re-normalization if nloptr 
   fails. More stable bootstrap standard errors than `gamma1` for all coefficients.
 
-* **`constraint = "gamma1"`** (default, enhanced): now uses BFGS (as in Amico et al. 
+* **`constraint = "gamma1"`** (enhanced): now uses BFGS (as in Amico et al. 
   2019 reference code) instead of L-BFGS-B. Nelder-Mead fallback retained.
 
 * **Brent method for bandwidth selection**: `h` is now selected by 
