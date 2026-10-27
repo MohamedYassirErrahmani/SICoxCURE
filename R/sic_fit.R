@@ -85,10 +85,43 @@
 #'
 #' @param constraint Character string specifying the
 #'   identifiability constraint on \eqn{\boldsymbol{\gamma}}.
-#'   \code{"gamma1"} (default): \eqn{\gamma_1 = 1}.
+#'   \code{"norm1"} (default): \eqn{\|\\boldsymbol{\\gamma}\\| = 1} and
 #'   \code{"norm1"}: \eqn{\|\boldsymbol{\gamma}\| = 1} and
 #'   \eqn{\gamma_1 > 0}. See Assumption A1-(v) in Amico et
 #'   al. (2019).
+#'
+#' @param gamma_init Numeric vector of length \eqn{d} or
+#'   \code{NULL} (default). Optional initial value for the
+#'   incidence coefficient vector \eqn{\boldsymbol{\gamma}}.
+#'   When supplied, the EM algorithm is warm-started from
+#'   this value (normalized to satisfy \code{constraint})
+#'   instead of the default logistic-regression
+#'   initialization. This is particularly useful when
+#'   \code{constraint = "norm1"}: initializing from the
+#'   converged \code{constraint = "gamma1"} solution
+#'   (normalized to unit norm) can substantially improve
+#'   convergence and avoid local optima of the SLSQP
+#'   optimizer. Example:
+#'   \preformatted{
+#'   fit_g1   <- sic_fit(..., constraint = "gamma1")
+#'   fit_norm1 <- sic_fit(..., constraint = "norm1",
+#'                        gamma_init = fit_g1$gamma)
+#'   }
+#'
+#' @param beta_init Numeric vector of length \eqn{q} or
+#'   \code{NULL} (default). Optional initial value for the
+#'   latency coefficient vector \eqn{\boldsymbol{\beta}}.
+#'   When supplied together with \code{gamma_init}, provides
+#'   a full warm-start of the EM algorithm from a previously
+#'   converged solution, which is the most effective way to
+#'   transfer the \code{gamma1} solution to \code{norm1}.
+#'   Example:
+#'   \preformatted{
+#'   fit_g1   <- sic_fit(..., constraint = "gamma1")
+#'   fit_norm1 <- sic_fit(..., constraint = "norm1",
+#'                        gamma_init = fit_g1$gamma,
+#'                        beta_init  = fit_g1$beta)
+#'   }
 #'
 #' @param tol Numeric. Convergence tolerance for the EM
 #'   algorithm. The algorithm stops when the maximum absolute
@@ -263,7 +296,9 @@
 #' Initial values are obtained from a logistic regression of
 #' \code{delta} on \code{X} (for \eqn{\boldsymbol{\gamma}^{(0)}})
 #' and a Cox model fitted on uncensored observations only
-#' (for \eqn{\boldsymbol{\beta}^{(0)}}).
+#' (for \eqn{\boldsymbol{\beta}^{(0)}}). When \code{gamma_init}
+#' is provided, it replaces the logistic initialization for
+#' \eqn{\boldsymbol{\gamma}^{(0)}}.
 #'
 #' @references
 #' Amico M, Van Keilegom I, Legrand C (2019). The
@@ -318,9 +353,12 @@ sic_fit <- function(Y         = NULL,
                     cols_X    = NULL,
                     cols_Z    = NULL,
                     kernel        = "epanechnikov",
-                    h_range       = c(0.4, 1.0),
+                    h_range       = c(0.05, 5.0),
                     h_step        = 0.001,
-                    constraint    = "gamma1",
+                    constraint    = "norm1",
+                    gamma_init    = NULL,
+                    beta_init     = NULL,
+                    h_init        = NULL,
                     tol           = 1e-5,
                     max_iter      = 500L,
                     conv_method   = c("both", "max", "sum"),
@@ -412,7 +450,11 @@ sic_fit <- function(Y         = NULL,
 
   if (verbose >= 1L) cat("Step 2/3: Initialisation...\n")
   init <- initialize_em(prep$Y, prep$delta, prep$X, prep$Z,
-                        constraint, verbose = (verbose >= 1L))
+                        constraint,
+                        gamma_init = gamma_init,
+                        beta_init  = beta_init,
+                        h_init     = h_init,
+                        verbose = (verbose >= 1L))
 
   if (verbose >= 1L) cat("Step 3/3: EM algorithm...\n")
   em <- run_em(prep$Y, prep$delta, prep$X, prep$Z,
@@ -420,6 +462,8 @@ sic_fit <- function(Y         = NULL,
                kernel, h_range, h_step,
                constraint, tol, max_iter,
                conv_method, verbose)
+
+
 
   names(em$gamma) <- prep$data_info$varnames_X
   names(em$beta)  <- prep$data_info$varnames_Z
@@ -446,8 +490,7 @@ sic_fit <- function(Y         = NULL,
   # MODIFICATION 3 : Bootstrap en option
   if (bootstrap) {
     if (verbose >= 1L)
-      cat("Computing bootstrap standard errors...
-")
+      cat("Computing bootstrap standard errors...\n")
     se_boot <- bootstrap_se(
       fit           = result,
       B             = B,
