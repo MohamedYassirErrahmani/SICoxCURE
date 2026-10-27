@@ -14,7 +14,7 @@ run_em <- function(Y, delta, X, Z,
                    conv_method = c("both", "max", "sum"),
                    verbose     = 1L) {
 
-  # ── Initialisation ────────────────────────────────────────────
+  # -- Initialisation --------------------------------------------
   conv_method <- match.arg(conv_method)
   kernel_fn   <- get_kernel(kernel)
   beyond_tau  <- data_info$beyond_tau
@@ -27,7 +27,7 @@ run_em <- function(Y, delta, X, Z,
   h_cur     <- init$h
   breslow   <- init$breslow
 
-  # ── Diagnostic vector ─────────────────────────────────────────
+  # -- Diagnostic vector -----------------------------------------
   loglik_comp_vec <- rep(NA_real_, max_iter)
 
   converged <- FALSE
@@ -42,24 +42,24 @@ run_em <- function(Y, delta, X, Z,
                 h_range[1], h_range[2], h_step,
                 length(seq(h_range[1], h_range[2], by=h_step))))
 
-    # MODIFICATION 2 : barre de progression toujours à 100%
-    # On utilise max = max_iter mais on la complète à la fin
+    # MODIFICATION 2 : barre de progression toujours  100%
+    # On utilise max = max_iter mais on la complte  la fin
     pb <- utils::txtProgressBar(min=0, max=100L, style=3)
   }
 
   for (m in seq_len(max_iter)) {
 
-    # ── E STEP ───────────────────────────────────────────────────
+    # -- E STEP ---------------------------------------------------
     W <- estep(p_cur, Su_cur, delta, beyond_tau)
 
-    # ── M STEP 1 : Bandwidth ─────────────────────────────────────
+    # -- M STEP 1 : Bandwidth -------------------------------------
     u_cur  <- compute_index(X, gamma_cur)
 
     cv_res <- select_bandwidth(u_cur, W, kernel_fn,
                                h_range, h_step)
     h_new  <- cv_res$h_opt
 
-    # ── M STEP 2 : Incidence ─────────────────────────────────────
+    # -- M STEP 2 : Incidence -------------------------------------
     # Suppress L-BFGS-B warning -> handled internally
     inc_res   <- suppressWarnings(
       mstep_incidence(gamma_cur, X, W, h_new,
@@ -68,13 +68,13 @@ run_em <- function(Y, delta, X, Z,
     gamma_new <- inc_res$gamma
     g_new     <- inc_res$g_hat
 
-    # ── M STEP 3 : Latency ───────────────────────────────────────
+    # -- M STEP 3 : Latency ---------------------------------------
     lat_res  <- mstep_latency(beta_cur, Y, delta, Z, W)
     beta_new <- lat_res$beta
     Su_new   <- lat_res$Su_hat
     breslow  <- lat_res$breslow
 
-    # ── CONVERGENCE CRITERION ─────────────────────────────────────
+    # -- CONVERGENCE CRITERION -------------------------------------
     S0_new      <- breslow$S0
     conv_result <- convergence_criterion(
       beta_new, beta_cur,
@@ -84,13 +84,13 @@ run_em <- function(Y, delta, X, Z,
     )
     crit <- conv_result$crit
 
-    # ── DIAGNOSTIC ───────────────────────────────────────────────
+    # -- DIAGNOSTIC -----------------------------------------------
     hu_approx          <- compute_hazard_u(Y, delta, Z,
                                            beta_new, breslow)
     loglik_comp_vec[m] <- complete_loglik(g_new, Su_new,
                                           hu_approx, delta, W)
 
-    # ── Verbose detail if verbose >= 2 ───────────────────────────
+    # -- Verbose detail if verbose >= 2 ---------------------------
     if (verbose >= 2L) {
       ll_comp_str <- if (!is.na(loglik_comp_vec[m]))
         sprintf("L_c=%.3f", loglik_comp_vec[m])
@@ -101,7 +101,7 @@ run_em <- function(Y, delta, X, Z,
       ))
     }
 
-    # ── Update parameters ─────────────────────────────────────────
+    # -- Update parameters -----------------------------------------
     S0_prev   <- S0_new
     gamma_cur <- gamma_new
     beta_cur  <- beta_new
@@ -109,8 +109,8 @@ run_em <- function(Y, delta, X, Z,
     Su_cur    <- Su_new
     h_cur     <- h_new
 
-    # MODIFICATION 2 : progression proportionnelle à la convergence
-    # -> représente à quel point on est proche de tol
+    # MODIFICATION 2 : progression proportionnelle  la convergence
+    # -> reprsente  quel point on est proche de tol
     if (verbose >= 1L) {
       # Progression = log(crit_init/crit) / log(crit_init/tol)
       # Toujours entre 0 et 100
@@ -123,7 +123,7 @@ run_em <- function(Y, delta, X, Z,
       utils::setTxtProgressBar(pb, pct)
     }
 
-    # ── Convergence test ──────────────────────────────────────────
+    # -- Convergence test ------------------------------------------
     if (crit < tol && m > 1L) {
       converged <- TRUE
       n_iter    <- m
@@ -131,9 +131,9 @@ run_em <- function(Y, delta, X, Z,
     }
   }
 
-  # ── End of loop ───────────────────────────────────────────────
+  # -- End of loop -----------------------------------------------
   if (verbose >= 1L) {
-    # Barre à 100% quand convergé
+    # Barre  100% quand converg
     utils::setTxtProgressBar(pb, 100L)
     close(pb)
     cat("\n")
@@ -143,7 +143,7 @@ run_em <- function(Y, delta, X, Z,
       green <- "\033[32m"
       reset <- "\033[0m"
       cat(sprintf(
-        "%s✓ Model converged successfully at iteration %d (criterion = %.2e < tol = %.0e)%s\n",
+        "%sv Model converged successfully at iteration %d (criterion = %.2e < tol = %.0e)%s\n",
         green, n_iter, crit, tol, reset
       ))
     } else {
@@ -158,7 +158,7 @@ run_em <- function(Y, delta, X, Z,
                   loglik_comp_vec[n_iter]))
   }
 
-  # ── Return results ────────────────────────────────────────────
+  # -- Return results --------------------------------------------
   list(
     gamma       = gamma_cur,
     beta        = beta_cur,
