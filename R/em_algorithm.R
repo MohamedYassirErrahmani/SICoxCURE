@@ -54,6 +54,7 @@ run_em <- function(Y, delta, X, Z,
 
     # ── M STEP 1 : Bandwidth ─────────────────────────────────────
     u_cur  <- compute_index(X, gamma_cur)
+
     cv_res <- select_bandwidth(u_cur, W, kernel_fn,
                                h_range, h_step)
     h_new  <- cv_res$h_opt
@@ -142,7 +143,7 @@ run_em <- function(Y, delta, X, Z,
       green <- "\033[32m"
       reset <- "\033[0m"
       cat(sprintf(
-        "%s\u2713 Model converged successfully at iteration %d (criterion = %.2e < tol = %.0e)%s\n",
+        "%s✓ Model converged successfully at iteration %d (criterion = %.2e < tol = %.0e)%s\n",
         green, n_iter, crit, tol, reset
       ))
     } else {
