@@ -1,7 +1,7 @@
 Package: SICoxCURE
 Type: Package
 Title: Single-Index/Cox Mixture Cure Model
-Version: 0.1.4
+Version: 0.1.0
 Authors@R: c(
     person("Mohamed Yassir", "Errahmani",
            role = c("aut", "cre"),
@@ -48,7 +48,7 @@ Suggests:
     rmarkdown,
     survival
 Config/testthat/edition: 3
-RoxygenNote: 7.3.0
 VignetteBuilder: knitr
 URL: https://github.com/MohamedYassirErrahmani/SICoxCURE
 BugReports: https://github.com/MohamedYassirErrahmani/SICoxCURE/issues
+Config/roxygen2/version: 8.1.0
