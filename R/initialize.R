@@ -3,9 +3,31 @@
 # EM algorithm initialisation
 # =============================================================
 
-init_incidence <- function(X, delta, constraint = "gamma1") {
+init_incidence <- function(X, delta, constraint = "gamma1",
+                           gamma_init = NULL) {
   if (!is.matrix(X)) X <- as.matrix(X)
   n <- nrow(X); d <- ncol(X)
+
+  if (!is.null(gamma_init)) {
+    if (length(gamma_init) != d)
+      stop(sprintf(
+        "'gamma_init' must have length %d (number of incidence covariates).",
+        d))
+    gamma_init_norm <- normalize_gamma(gamma_init, constraint)$gamma
+    names(gamma_init_norm) <- colnames(X)
+    df        <- as.data.frame(cbind(y = delta, X))
+    logit_fit <- tryCatch(
+      stats::glm(y ~ ., data = df, family = stats::binomial("logit")),
+      error = function(e) NULL
+    )
+    p_hat <- if (!is.null(logit_fit))
+      clip_prob(as.vector(stats::fitted(logit_fit)))
+    else
+      rep(mean(delta), n)
+    return(list(gamma = gamma_init_norm, p_hat = p_hat,
+                logit_fit = logit_fit))
+  }
+
   df        <- as.data.frame(cbind(y = delta, X))
   logit_fit <- tryCatch(
     stats::glm(y ~ ., data = df, family = stats::binomial("logit")),
@@ -25,18 +47,30 @@ init_incidence <- function(X, delta, constraint = "gamma1") {
   list(gamma = gamma_init, p_hat = p_hat, logit_fit = logit_fit)
 }
 
-init_latency <- function(Y, delta, Z) {
+init_latency <- function(Y, delta, Z, beta_init = NULL) {
   if (!is.matrix(Z)) Z <- as.matrix(Z)
   n       <- length(Y)
   z_names <- if (!is.null(colnames(Z))) colnames(Z) else
     paste0("Z", seq_len(ncol(Z)))
 
-  #    observations only for the latency" ──────────────────────
+  # Warm-start: beta_init fourni directement
+  if (!is.null(beta_init)) {
+    if (length(beta_init) != ncol(Z))
+      stop(sprintf(
+        "'beta_init' must have length %d (number of latency covariates).",
+        ncol(Z)))
+    beta_init        <- as.numeric(beta_init)
+    names(beta_init) <- z_names
+    W_unif  <- rep(1.0, n)
+    breslow <- breslow_estimator(Y, delta, Z, beta_init, W_unif)
+    Su_hat  <- pmax(eval_Su_diag(Y, Z, beta_init, breslow), 0.0)
+    return(list(beta = beta_init, breslow = breslow, Su_hat = Su_hat))
+  }
+
   idx_events <- which(delta == 1L)
   n_events   <- length(idx_events)
 
   if (n_events < 2L) {
-    # Not enough events -> fall back to all observations
     warning(sprintf(
       "Only %d event(s) observed. Using all observations for Cox initialisation.",
       n_events
@@ -50,7 +84,6 @@ init_latency <- function(Y, delta, Z) {
   delta_fit <- delta[idx_fit]
   Z_fit     <- Z[idx_fit, , drop=FALSE]
 
-  # Build data.frame for coxph()
   df_cox <- as.data.frame(cbind(time = Y_fit, status = delta_fit, Z_fit))
   colnames(df_cox) <- c("time", "status", z_names)
 
@@ -73,7 +106,6 @@ init_latency <- function(Y, delta, Z) {
     names(beta_init) <- z_names
   }
 
-  # At initialisation we assume all patients are uncured (W=1)
   W_unif  <- rep(1.0, n)
   breslow <- breslow_estimator(Y, delta, Z, beta_init, W_unif)
   Su_hat  <- pmax(eval_Su_diag(Y, Z, beta_init, breslow), 0.0)
@@ -83,12 +115,25 @@ init_latency <- function(Y, delta, Z) {
 
 initialize_em <- function(Y, delta, X, Z,
                           constraint = "gamma1",
+                          gamma_init = NULL,
+                          beta_init  = NULL,
+                          h_init     = NULL,
                           verbose    = TRUE) {
-  if (verbose) cat("  [1/2] Initialising incidence (logistic)...\n")
-  inc <- init_incidence(X, delta, constraint)
+  if (verbose) {
+    if (!is.null(gamma_init))
+      cat("  [1/2] Initialising incidence (using provided gamma_init)...\n")
+    else
+      cat("  [1/2] Initialising incidence (logistic)...\n")
+  }
+  inc <- init_incidence(X, delta, constraint, gamma_init = gamma_init)
 
-  if (verbose) cat("  [2/2] Initialising latency (Cox on events only)...\n")
-  lat <- init_latency(Y, delta, Z)
+  if (verbose) {
+    if (!is.null(beta_init))
+      cat("  [2/2] Initialising latency (using provided beta_init)...\n")
+    else
+      cat("  [2/2] Initialising latency (Cox on events only)...\n")
+  }
+  lat <- init_latency(Y, delta, Z, beta_init = beta_init)
 
   if (verbose) {
     cat(sprintf("  Initial gamma : [%s]\n",
@@ -97,7 +142,9 @@ initialize_em <- function(Y, delta, X, Z,
                 paste(round(lat$beta,  3), collapse=", ")))
   }
 
+  h_start <- if (!is.null(h_init) && is.numeric(h_init) && h_init > 0) h_init else 0.7
+
   list(gamma   = inc$gamma,   p_hat     = inc$p_hat,
        beta    = lat$beta,    Su_hat    = lat$Su_hat,
-       breslow = lat$breslow, h         = 0.7)
+       breslow = lat$breslow, h         = h_start)
 }
